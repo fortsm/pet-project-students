@@ -9,7 +9,6 @@ use App\Http\Resources\StudentCollection;
 use App\Http\Resources\StudentDetailResource;
 use App\Models\Student;
 use App\Traits\HasJsonNotFoundRosource;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 

@@ -6,7 +6,6 @@ use App\Models\Curriculum;
 use App\Traits\HasJsonFailedValidation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Validation\Validator;
 
 class SetLecturesRequest extends FormRequest
 {

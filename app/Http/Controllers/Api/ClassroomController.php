@@ -11,7 +11,6 @@ use App\Http\Resources\ClassroomDetailResource;
 use App\Http\Resources\ClassroomWithLecturesResource;
 use App\Models\Classroom;
 use App\Traits\HasJsonNotFoundRosource;
-use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
