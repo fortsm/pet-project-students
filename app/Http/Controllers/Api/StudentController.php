@@ -5,37 +5,34 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStudentRequest;
 use App\Http\Requests\UpdateStudentRequest;
+use App\Http\Resources\StudentCollection;
+use App\Http\Resources\StudentDetailResource;
 use App\Models\Student;
+use App\Traits\HasJsonNotFoundRosource;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class StudentController extends Controller
 {
+    use HasJsonNotFoundRosource;
+
     /**
      * Display a list of students.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): StudentCollection
     {
-        $students = Student::query()->get();
-
-        return response()->json($students, 200);
+        return new StudentCollection(Student::paginate(10));
     }
 
     /**
      * Display the specified student.
      */
-    public function show(int $id): JsonResponse
+    public function show(int $id): StudentDetailResource|JsonResponse
     {
-        try {
-            $student = Student::with('classroom.attended_lectures')->findOrFail($id);
-        } catch (Exception $e) {
-            return response()->json([
-                'success'   => false,
-                'message'   => 'Студент не найден',
-            ], 404);
-        }
-        return response()->json($student, 200);
+        $student = Student::find($id);
+        $this->checkFound($student, Student::class, 'Студент');
+        return new StudentDetailResource($student);
     }
 
     /**
@@ -53,17 +50,11 @@ class StudentController extends Controller
      */
     public function update(UpdateStudentRequest $request, int $id): JsonResponse
     {
-        try {
-            $student = Student::findOrFail($id);
-            $validated = $request->validated();
-            $student->fill($validated);
-            $student->save();
-        } catch (Exception $e) {
-            return response()->json([
-                'success'   => false,
-                'message'   => "Ошибка обновления студента: {$e->getMessage()}",
-            ], 404);
-        }
+        $student = Student::find($id);
+        $this->checkFound($student, Student::class, 'Студент');
+        $validated = $request->validated();
+        $student->fill($validated);
+        $student->save();
         return response()->json('Студент обновлен', 200);
     }
 
@@ -73,16 +64,8 @@ class StudentController extends Controller
     public function destroy(int $id): JsonResponse
     {
         $student = Student::find($id);
-        if (!($student instanceof Student)) {
-            return response()->json([
-                'success'   => false,
-                'message'   => 'Студент не найден',
-            ], 404);
-        }
+        $this->checkFound($student, Student::class, 'Студент');
         $student->delete();
-        return response()->json([
-            'success'   => true,
-            'message'   => 'Студент успешно удален',
-        ], 200);
+        return response()->json('Студент успешно удален', 200);
     }
 }

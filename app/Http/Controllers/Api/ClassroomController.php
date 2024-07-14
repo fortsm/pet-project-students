@@ -6,53 +6,45 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\SetLecturesRequest;
 use App\Http\Requests\StoreClassroomRequest;
 use App\Http\Requests\UpdateClassroomRequest;
+use App\Http\Resources\ClassroomCollection;
+use App\Http\Resources\ClassroomDetailResource;
+use App\Http\Resources\ClassroomWithLecturesResource;
 use App\Models\Classroom;
+use App\Traits\HasJsonNotFoundRosource;
 use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ClassroomController extends Controller
 {
+    use HasJsonNotFoundRosource;
+
     /**
      * Display a listing of the classrooms.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): ClassroomCollection
     {
-        $classrooms = Classroom::query()->get();
-        return response()->json($classrooms, 200);
+        return new ClassroomCollection(Classroom::paginate(10));
     }
 
     /**
      * Display the specified classroom with students.
      */
-    public function show(int $id): JsonResponse
+    public function show(int $id): ClassroomDetailResource|JsonResponse
     {
-        try {
-            $classroom = Classroom::with('students')->findOrFail($id);
-        } catch (Exception $e) {
-            return response()->json([
-                'success'   => false,
-                'message'   => 'Класс не найден',
-            ], 404);
-        }
-        return response()->json($classroom, 200);
+        $classroom = Classroom::find($id);
+        $this->checkFound($classroom, Classroom::class, 'Класс');
+        return new ClassroomDetailResource($classroom);
     }
 
     /**
      * Display the specified classroom with lectures.
      */
-    public function lectures(int $id): JsonResponse
+    public function lectures(int $id): ClassroomWithLecturesResource
     {
-        try {
-            $classroom = Classroom::with('lectures')
-                ->findOrFail($id);
-        } catch (Exception $e) {
-            return response()->json([
-                'success'   => false,
-                'message'   => 'Класс не найден',
-            ], 404);
-        }
-        return response()->json($classroom, 200);
+        $classroom = Classroom::find($id);
+        $this->checkFound($classroom, Classroom::class, 'Класс');
+        return new ClassroomWithLecturesResource($classroom);
     }
 
     /**
@@ -66,20 +58,14 @@ class ClassroomController extends Controller
          * лекций к классу через промежуточную таблицу, а не путем добавления
          * каждой отдельной строки в БД.
          */
-        try {
-            $lectures = $request->validated();
-            $classroom = Classroom::findOrFail($id);
-            $curriculum = [];
-            foreach ($lectures as $lecture_id => $date) {
-                $curriculum[$lecture_id] = ['audition_date' => $date];
-            }
-            $classroom->lectures()->sync($curriculum);
-        } catch (Exception $e) {
-            return response()->json([
-                'success'   => false,
-                'message'   => "Ошибка при создании/редактировании расписания лекций: {$e->getMessage()}",
-            ], 400);
+        $lectures = $request->validated();
+        $classroom = Classroom::find($id);
+        $this->checkFound($classroom, Classroom::class, 'Класс');
+        $curriculum = [];
+        foreach ($lectures as $lecture_id => $date) {
+            $curriculum[$lecture_id] = ['audition_date' => $date];
         }
+        $classroom->lectures()->sync($curriculum);
         return response()->json('Расписание обновлено', 200);
     }
 
@@ -98,17 +84,11 @@ class ClassroomController extends Controller
      */
     public function update(UpdateClassroomRequest $request, int $id): JsonResponse
     {
-        try {
-            $classroom = Classroom::findOrFail($id);
-            $validated = $request->validated();
-            $classroom->fill($validated);
-            $classroom->save();
-        } catch (Exception $e) {
-            return response()->json([
-                'success'   => false,
-                'message'   => "Ошибка обновления класса: {$e->getMessage()}",
-            ], 404);
-        }
+        $classroom = Classroom::find($id);
+        $this->checkFound($classroom, Classroom::class, 'Класс');
+        $validated = $request->validated();
+        $classroom->fill($validated);
+        $classroom->save();
         return response()->json('Класс обновлен', 200);
     }
 
@@ -118,16 +98,8 @@ class ClassroomController extends Controller
     public function destroy(int $id): JsonResponse
     {
         $classroom = Classroom::find($id);
-        if (!($classroom instanceof Classroom)) {
-            return response()->json([
-                'success'   => false,
-                'message'   => 'Класс не найден',
-            ], 404);
-        }
+        $this->checkFound($classroom, Classroom::class, 'Класс');
         $classroom->delete();
-        return response()->json([
-            'success'   => true,
-            'message'   => 'Класс успешно удален',
-        ], 200);
+        return response()->json('Класс успешно удален', 200);
     }
 }

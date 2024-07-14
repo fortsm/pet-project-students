@@ -21,7 +21,7 @@ class Classroom extends Model
     ];
 
     /**
-     * The students that belong to the classrom.
+     * The students that belong to the classroom.
      */
     public function students(): HasMany
     {
@@ -29,7 +29,7 @@ class Classroom extends Model
     }
 
     /**
-     * The lectures that belong to the classrom.
+     * The lectures that belong to the classroom.
      */
     public function lectures(): BelongsToMany
     {
