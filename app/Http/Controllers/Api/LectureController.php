@@ -5,21 +5,23 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreLectureRequest;
 use App\Http\Requests\UpdateLectureRequest;
+use App\Http\Resources\LectureCollection;
+use App\Http\Resources\LectureDetailResource;
 use App\Models\Lecture;
-use Exception;
+use App\Traits\HasJsonNotFoundRosource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class LectureController extends Controller
 {
+    use HasJsonNotFoundRosource;
+
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request): JsonResponse
+    public function index(Request $request): LectureCollection
     {
-        $lectures = Lecture::query()->get();
-
-        return response()->json($lectures, 200);
+        return new LectureCollection(Lecture::paginate(10));
     }
 
     /**
@@ -35,18 +37,11 @@ class LectureController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(int $id): JsonResponse
+    public function show(int $id): LectureDetailResource
     {
-        try {
-            $lecture = Lecture::with(['attended_classrooms', 'attended_classrooms.students'])
-                ->findOrFail($id);
-        } catch (Exception $e) {
-            return response()->json([
-                'success'   => false,
-                'message'   => 'Лекция не найдена',
-            ], 404);
-        }
-        return response()->json($lecture, 200);
+        $lecture = Lecture::find($id);
+        $this->checkFound($lecture, Lecture::class, 'Лекция');
+        return new LectureDetailResource($lecture);
     }
 
     /**
@@ -54,17 +49,11 @@ class LectureController extends Controller
      */
     public function update(UpdateLectureRequest $request, int $id)
     {
-        try {
-            $lecture = Lecture::findOrFail($id);
-            $validated = $request->validated();
-            $lecture->fill($validated);
-            $lecture->save();
-        } catch (Exception $e) {
-            return response()->json([
-                'success'   => false,
-                'message'   => "Ошибка обновления лекции: {$e->getMessage()}",
-            ], 404);
-        }
+        $lecture = Lecture::find($id);
+        $this->checkFound($lecture, Lecture::class, 'Лекция');
+        $validated = $request->validated();
+        $lecture->fill($validated);
+        $lecture->save();
         return response()->json('Лекция обновлена', 200);
     }
 
@@ -74,16 +63,8 @@ class LectureController extends Controller
     public function destroy(int $id): JsonResponse
     {
         $lecture = Lecture::find($id);
-        if (!($lecture instanceof Lecture)) {
-            return response()->json([
-                'success'   => false,
-                'message'   => 'Лекция не найдена',
-            ], 404);
-        }
+        $this->checkFound($lecture, Lecture::class, 'Лекция');
         $lecture->delete();
-        return response()->json([
-            'success'   => true,
-            'message'   => 'Лекция успешно удалена',
-        ], 200);
+        return response()->json('Лекция успешно удалена', 200);
     }
 }

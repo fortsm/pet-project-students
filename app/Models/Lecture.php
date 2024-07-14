@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -35,5 +36,14 @@ class Lecture extends Model
     {
         return $this->classrooms()
             ->wherePivot('audition_date', '<', date('Y-m-d'));
+    }
+
+    /**
+     * The attended students that belong to the lecture.
+     */
+    public function attended_students(): Collection
+    {
+        return Student::whereIn('classroom_id', $this->attended_classrooms()->pluck('classrooms.id'))
+            ->get();
     }
 }

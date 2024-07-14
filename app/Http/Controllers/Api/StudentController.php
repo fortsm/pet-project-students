@@ -27,7 +27,7 @@ class StudentController extends Controller
     /**
      * Display the specified student.
      */
-    public function show(int $id): StudentDetailResource|JsonResponse
+    public function show(int $id): StudentDetailResource
     {
         $student = Student::find($id);
         $this->checkFound($student, Student::class, 'Студент');
